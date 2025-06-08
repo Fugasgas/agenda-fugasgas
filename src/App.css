@@ -1,108 +1,103 @@
-html, body {
-  margin: 0;
-  padding: 0;
-  background-color: #e9e9e9;
-  font-family: Arial, sans-serif;
-  height: auto;
-  min-height: 100vh;
-  overflow-y: auto;
-}
-
+/* Contenedor general tipo app móvil */
 .app-container {
-  max-width: 400px;
+  max-width: 420px;
   margin: 20px auto;
-  background-color: white;
+  padding: 20px;
+  background-color: #f0f0f0;
   border: 10px solid black;
   border-radius: 20px;
-  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  font-family: Arial, sans-serif;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
 }
 
-.form-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
+/* Logo centrado */
 .logo {
+  display: block;
+  margin: 0 auto 10px;
   width: 200px;
-  height: auto;
-  margin-bottom: 10px;
 }
 
+/* Título centrado */
 h2 {
-  margin-bottom: 15px;
   text-align: center;
+  margin-bottom: 20px;
+  font-size: 22px;
 }
 
-form {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
+/* Estilo general inputs, selects y textarea */
 input,
 select,
 textarea {
-  margin-bottom: 12px;
-  padding: 10px;
-  font-size: 14px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
   width: 100%;
-  box-sizing: border-box;
-  background-color: white;
-  font-family: inherit;
-}
-
-textarea {
-  resize: vertical;
-  margin-bottom: 15px;
-  min-height: 60px;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 3px rgba(0, 123, 255, 0.5);
-}
-
-button {
-  padding: 12px;
-  background-color: #0099cc;
-  color: white;
-  border: none;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  border: 1px solid #ccc;
   border-radius: 6px;
-  font-size: 16px;
-  cursor: pointer;
+  box-sizing: border-box;
 }
 
-button:hover {
-  background-color: #0077aa;
-}
-
+/* Calendario centrado */
 .calendar-inline {
-  margin: 10px auto;
-  width: fit-content;
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
 }
 
+/* Días domingo en rojo */
 .react-datepicker__day--sunday {
   color: red !important;
 }
 
-/* Pie de página */
-.footer {
-  margin-top: 20px;
-  text-align: center;
-  font-size: 13px;
-  color: #555;
+/* Botón reservar */
+button[type="submit"] {
+  width: 100%;
+  padding: 12px;
+  background-color: #007bff;
+  color: white;
+  font-size: 17px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 10px;
 }
 
+button[type="submit"]:hover {
+  background-color: #0056b3;
+}
+
+/* Pie de página */
+.footer {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+}
+
+/* Enlace del pie */
 .footer a {
+  color: #007bff;
   text-decoration: none;
-  color: #0099cc;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+/* Adaptación responsive */
+@media (max-width: 480px) {
+  .app-container {
+    margin: 10px;
+    padding: 15px;
+  }
+
+  .logo {
+    width: 180px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
 }

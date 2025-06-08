@@ -33,7 +33,10 @@ export default function App() {
   const disponibilidad = {};
 
   const asignarTecnico = (comuna, fecha, tramo) => {
-    const fechaStr = fecha.toISOString().split('T')[0];
+    const fechaObj = new Date(fecha);
+    const fechaStr = !isNaN(fechaObj) ? fechaObj.toISOString().split('T')[0] : '';
+    if (!fechaStr) return 'fugasgas.cl@gmail.com';
+
     const tecnicosDisponibles = [];
 
     for (const tecnico in zonasPorTecnico) {
@@ -53,51 +56,36 @@ export default function App() {
     e.preventDefault();
 
     const tecnicoEmail = asignarTecnico(form.comuna, form.fecha, form.tramo);
-    const adminEmail = 'fugasgas.cl@gmail.com';
 
-    const tecnicoNombres = {
-      'pablocampusano0204@gmail.com': 'Pablo Campusano',
-      'marcelocampusanouno@gmail.com': 'Marcelo Campusano',
-      'betocampu@gmail.com': 'Alberto Campusano'
-    };
+    const tecnicoNombre = tecnicoEmail === 'pablocampusano0204@gmail.com' ? 'Pablo Campusano'
+                        : tecnicoEmail === 'marcelocampusanouno@gmail.com' ? 'Marcelo Campusano'
+                        : tecnicoEmail === 'betocampu@gmail.com' ? 'Alberto Campusano'
+                        : 'Sin asignar';
 
-    const tecnico_nombre = tecnicoNombres[tecnicoEmail] || 'Equipo Fugas-Gas';
-
-    const commonParams = {
-      ...form,
-      fecha: form.fecha.toLocaleDateString('es-CL'),
-      tecnico_email: tecnicoEmail,
-      tecnico_nombre: tecnico_nombre,
-      correo_cliente: form.correo,
-      dto: form.dto // garantizado para envío
-    };
-
-    const serviceID = 'service_puqsoem';
-    const templateID = 'template_7fhj27n';
-    const userID = 'gncxbnGHgXlEEkbOP';
-
-    emailjs.send(serviceID, templateID, {
-      ...commonParams,
-      to_email: form.correo,
-      to_name: form.nombre,
-      reply_to: form.correo
-    }, userID);
-
-    emailjs.send(serviceID, templateID, {
-      ...commonParams,
+    const templateParams = {
+      nombre: form.nombre,
+      direccion: form.direccion,
+      dto: form.dto,
+      comuna: form.comuna,
+      telefono: form.telefono,
+      correo: form.correo,
+      fecha: form.fecha instanceof Date ? form.fecha.toLocaleDateString('es-CL') : '',
+      tramo: form.tramo,
+      servicio: form.servicio,
+      mensaje: form.mensaje,
+      tecnico: tecnicoNombre,
       to_email: tecnicoEmail,
-      to_name: tecnico_nombre,
-      reply_to: form.correo
-    }, userID);
+      bcc_email: 'fugasgas.cl@gmail.com'
+    };
 
-    emailjs.send(serviceID, templateID, {
-      ...commonParams,
-      to_email: adminEmail,
-      to_name: 'Administrador Fugas-Gas',
-      reply_to: form.correo
-    }, userID)
-      .then(() => alert('Reserva enviada con éxito'))
-      .catch(() => alert('Error al enviar la reserva'));
+    emailjs.send('service_puqsoem', 'template_7fhj27n', templateParams, 'gncxbnGHgXlEEkbOP')
+      .then(() => {
+        alert('Reserva enviada con éxito');
+      })
+      .catch((error) => {
+        console.log('Error al enviar:', error);
+        alert('Error al enviar la reserva');
+      });
   };
 
   return (
