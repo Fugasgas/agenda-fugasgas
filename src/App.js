@@ -10,6 +10,7 @@ export default function App() {
   const [form, setForm] = useState({
     nombre: '',
     direccion: '',
+    dto: '',
     comuna: '',
     telefono: '',
     correo: '',
@@ -29,20 +30,7 @@ export default function App() {
     'betocampu@gmail.com': ['Santiago', 'Providencia', 'Ñuñoa', 'Macul', 'Maipú', 'Pudahuel', 'Cerro Navia', 'Recoleta']
   };
 
-  const disponibilidad = {
-    '2025-06-06': {
-      AM: {
-        'pablocampusano0204@gmail.com': 2,
-        'marcelocampusanouno@gmail.com': 1,
-        'betocampu@gmail.com': 2
-      },
-      PM: {
-        'pablocampusano0204@gmail.com': 2,
-        'marcelocampusanouno@gmail.com': 2,
-        'betocampu@gmail.com': 1
-      }
-    }
-  };
+  const disponibilidad = {};
 
   const asignarTecnico = (comuna, fecha, tramo) => {
     const fechaStr = fecha.toISOString().split('T')[0];
@@ -65,16 +53,49 @@ export default function App() {
     e.preventDefault();
 
     const tecnicoEmail = asignarTecnico(form.comuna, form.fecha, form.tramo);
+    const adminEmail = 'fugasgas.cl@gmail.com';
 
-    const dataConDestinatarios = {
+    const tecnicoNombres = {
+      'pablocampusano0204@gmail.com': 'Pablo Campusano',
+      'marcelocampusanouno@gmail.com': 'Marcelo Campusano',
+      'betocampu@gmail.com': 'Alberto Campusano'
+    };
+
+    const tecnico_nombre = tecnicoNombres[tecnicoEmail] || 'Equipo Fugas-Gas';
+
+    const commonParams = {
       ...form,
       fecha: form.fecha.toLocaleDateString('es-CL'),
       tecnico_email: tecnicoEmail,
-      admin_email: 'fugasgas.cl@gmail.com'
+      tecnico_nombre: tecnico_nombre,
+      correo_cliente: form.correo,
+      dto: form.dto // garantizado para envío
     };
 
-    emailjs
-      .send('tu_service_id', 'tu_template_id', dataConDestinatarios, 'tu_user_id')
+    const serviceID = 'service_puqsoem';
+    const templateID = 'template_7fhj27n';
+    const userID = 'gncxbnGHgXlEEkbOP';
+
+    emailjs.send(serviceID, templateID, {
+      ...commonParams,
+      to_email: form.correo,
+      to_name: form.nombre,
+      reply_to: form.correo
+    }, userID);
+
+    emailjs.send(serviceID, templateID, {
+      ...commonParams,
+      to_email: tecnicoEmail,
+      to_name: tecnico_nombre,
+      reply_to: form.correo
+    }, userID);
+
+    emailjs.send(serviceID, templateID, {
+      ...commonParams,
+      to_email: adminEmail,
+      to_name: 'Administrador Fugas-Gas',
+      reply_to: form.correo
+    }, userID)
       .then(() => alert('Reserva enviada con éxito'))
       .catch(() => alert('Error al enviar la reserva'));
   };
@@ -87,6 +108,7 @@ export default function App() {
         <form onSubmit={handleSubmit}>
           <input type="text" name="nombre" placeholder="Nombre" value={form.nombre} onChange={handleChange} required />
           <input type="text" name="direccion" placeholder="Dirección" value={form.direccion} onChange={handleChange} required />
+          <input type="text" name="dto" placeholder="Depto / Casa / Letra" value={form.dto} onChange={handleChange} />
           <input type="text" name="comuna" placeholder="Comuna" value={form.comuna} onChange={handleChange} required />
           <input type="tel" name="telefono" placeholder="Teléfono" value={form.telefono} onChange={handleChange} required />
           <input type="email" name="correo" placeholder="Correo" value={form.correo} onChange={handleChange} required />
