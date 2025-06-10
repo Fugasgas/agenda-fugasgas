@@ -1,156 +1,110 @@
 import React, { useState } from 'react';
 import emailjs from 'emailjs-com';
-import './App.css';
 import DatePicker, { registerLocale } from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import es from 'date-fns/locale/es';
-registerLocale('es', es);
+import 'react-datepicker/dist/react-datepicker.css';
+import './App.css';
 
-export default function App() {
-  const [form, setForm] = useState({
-    nombre: '',
-    direccion: '',
-    dto: '',
-    comuna: '',
-    telefono: '',
-    correo: '',
-    fecha: '',
-    tramo: '',
-    servicio: '',
-    mensaje: ''
-  });
+registerLocale("es", es);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+function App() {
+  const [fecha, setFecha] = useState(new Date());
+  const [comuna, setComuna] = useState('');
+
+  const zonas = {
+    oriente: ['Providencia', 'Ñuñoa', 'La Reina', 'Las Condes', 'Vitacura', 'Lo Barnechea', 'Macul', 'Peñalolén'],
+    norte: ['Recoleta', 'Huechuraba', 'Quilicura', 'Conchalí', 'Independencia'],
+    sur: ['La Florida', 'Puente Alto', 'La Pintana', 'San Joaquín', 'San Miguel', 'La Granja', 'San Ramón', 'El Bosque', 'Pedro Aguirre Cerda'],
   };
 
-  const zonasPorTecnico = {
-    'pablocampusano0204@gmail.com': ['Ñuñoa', 'Providencia', 'Las Condes', 'Vitacura', 'Peñalolén', 'Macul'],
-    'marcelocampusanouno@gmail.com': ['La Florida', 'Puente Alto', 'Peñalolén', 'Ñuñoa', 'Providencia', 'Recoleta'],
-    'betocampu@gmail.com': ['Santiago', 'Providencia', 'Ñuñoa', 'Macul', 'Maipú', 'Pudahuel', 'Cerro Navia', 'Recoleta']
+  const correosTecnicos = {
+    oriente: 'pablocampusano0204@gmail.com',
+    norte: 'betocampu@gmail.com',
+    sur: 'marcelocampusanouno@gmail.com',
   };
 
-  const disponibilidad = {};
-
-  const asignarTecnico = (comuna, fecha, tramo) => {
-    const fechaObj = new Date(fecha);
-    const fechaStr = !isNaN(fechaObj) ? fechaObj.toISOString().split('T')[0] : '';
-    if (!fechaStr) return 'fugasgas.cl@gmail.com';
-
-    const tecnicosDisponibles = [];
-
-    for (const tecnico in zonasPorTecnico) {
-      if (zonasPorTecnico[tecnico].includes(comuna)) {
-        const visitas = disponibilidad[fechaStr]?.[tramo]?.[tecnico] || 0;
-        if (visitas < 3) {
-          tecnicosDisponibles.push({ tecnico, visitas });
-        }
+  const asignarTecnico = (comunaSeleccionada) => {
+    for (const zona in zonas) {
+      if (zonas[zona].includes(comunaSeleccionada)) {
+        return correosTecnicos[zona];
       }
     }
-
-    tecnicosDisponibles.sort((a, b) => a.visitas - b.visitas);
-    return tecnicosDisponibles[0]?.tecnico || 'fugasgas.cl@gmail.com';
+    return 'fugasgas.cl@gmail.com';
   };
 
-  const handleSubmit = (e) => {
+  const enviarFormulario = (e) => {
     e.preventDefault();
+    const form = e.target;
+    const tecnicoEmail = asignarTecnico(comuna);
 
-    const tecnicoEmail = asignarTecnico(form.comuna, form.fecha, form.tramo);
-
-    const tecnicoNombre = tecnicoEmail === 'pablocampusano0204@gmail.com' ? 'Pablo Campusano'
-                        : tecnicoEmail === 'marcelocampusanouno@gmail.com' ? 'Marcelo Campusano'
-                        : tecnicoEmail === 'betocampu@gmail.com' ? 'Alberto Campusano'
-                        : 'Sin asignar';
-
-    const templateParams = {
-      nombre: form.nombre,
-      direccion: form.direccion,
-      dto: form.dto,
-      comuna: form.comuna,
-      telefono: form.telefono,
-      correo: form.correo,
-      fecha: form.fecha instanceof Date ? form.fecha.toLocaleDateString('es-CL') : '',
-      tramo: form.tramo,
-      servicio: form.servicio,
-      mensaje: form.mensaje,
-      tecnico: tecnicoNombre,
-      to_email: tecnicoEmail,
-      bcc_email: 'fugasgas.cl@gmail.com'
-    };
-
-    emailjs.send('service_puqsoem', 'template_7fhj27n', templateParams, 'gncxbnGHgXlEEkbOP')
-      .then(() => {
-        alert('Reserva enviada con éxito');
-      })
-      .catch((error) => {
-        console.log('Error al enviar:', error);
-        alert('Error al enviar la reserva');
-      });
+    emailjs.sendForm(
+      'service_puqsoem',
+      'template_7fhj27n',
+      form,
+      'ckSlrT8yMxEwuREmO'
+    ).then(() => {
+      alert("Reserva enviada con éxito.");
+      form.reset();
+      setFecha(new Date());
+      setComuna('');
+    }, (error) => {
+      console.error('Error al enviar:', error.text);
+      alert("Hubo un error al enviar la reserva.");
+    });
   };
 
   return (
     <div className="app-container">
-      <div className="form-wrapper">
-        <img src="logo.png" alt="Logo Fugas-Gas" className="logo" />
-        <h2>Agende su visita</h2>
-        <form onSubmit={handleSubmit}>
-          <input type="text" name="nombre" placeholder="Nombre" value={form.nombre} onChange={handleChange} required />
-          <input type="text" name="direccion" placeholder="Dirección" value={form.direccion} onChange={handleChange} required />
-          <input type="text" name="dto" placeholder="Depto / Casa / Letra" value={form.dto} onChange={handleChange} />
-          <input type="text" name="comuna" placeholder="Comuna" value={form.comuna} onChange={handleChange} required />
-          <input type="tel" name="telefono" placeholder="Teléfono" value={form.telefono} onChange={handleChange} required />
-          <input type="email" name="correo" placeholder="Correo" value={form.correo} onChange={handleChange} required />
+      <img src="logo.png" alt="Logo" className="logo" />
+      <h2>Agenda tu visita</h2>
+      <form onSubmit={enviarFormulario}>
+        <input type="text" name="nombre" placeholder="Nombre completo" required />
+        <input type="text" name="direccion" placeholder="Dirección" required />
+        <input type="text" name="departamento" placeholder="Casa / Dpto / Letra" />
+        <input type="text" name="comuna" placeholder="Comuna" value={comuna} onChange={(e) => setComuna(e.target.value)} required />
+        <input type="tel" name="telefono" placeholder="Teléfono" required />
+        <input type="email" name="user_email" placeholder="Correo electrónico" required />
 
-          <div className="calendar-inline">
-            <DatePicker
-              selected={form.fecha}
-              onChange={(date) => setForm({ ...form, fecha: date })}
-              inline
-              locale="es"
-              minDate={new Date()}
-              dayClassName={(date) =>
-                date.getDay() === 0 ? 'react-datepicker__day--sunday' : undefined
-              }
-            />
-          </div>
-
-          <select name="tramo" value={form.tramo} onChange={handleChange} required>
-            <option value="">Seleccione Tramo Horario</option>
-            <option value="AM">AM (9:00 - 13:00)</option>
-            <option value="PM">PM (14:00 - 18:00)</option>
-          </select>
-
-          <select name="servicio" value={form.servicio} onChange={handleChange} required>
-            <option value="">Seleccione servicio requerido</option>
-            <option value="Mantención De Calefón">Mantención De Calefón</option>
-            <option value="Instalación De Calefón">Instalación De Calefón</option>
-            <option value="Mantención De Termo">Mantención De Termo</option>
-            <option value="Instalación De Termo">Instalación De Termo</option>
-            <option value="Limpieza De Cañerías">Limpieza De Cañerías</option>
-            <option value="Instalación De Griferías">Instalación De Griferías</option>
-            <option value="Detección De Fuga De Gas">Detección De Fuga De Gas</option>
-            <option value="Instalación Filtro Calefón">Instalación Filtro Calefón</option>
-            <option value="Instalación Filtro Triple Casa">Instalación Filtro Triple Casa</option>
-            <option value="Otro">Otro</option>
-          </select>
-
-          <textarea
-            name="mensaje"
-            placeholder="Mensaje para el técnico (opcional)"
-            value={form.mensaje}
-            onChange={handleChange}
-            rows={3}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <DatePicker
+            selected={fecha}
+            onChange={(date) => setFecha(date)}
+            name="fecha"
+            dateFormat="dd/MM/yyyy"
+            minDate={new Date()}
+            inline
+            locale="es"
           />
+        </div>
 
-          <button type="submit">Reservar</button>
-        </form>
-      </div>
+        <select name="tramo" required>
+          <option value="">Seleccione tramo horario</option>
+          <option value="09:00 a 13:00">09:00 a 13:00</option>
+          <option value="14:00 a 18:00">14:00 a 18:00</option>
+        </select>
+
+        <select name="servicio" required>
+          <option value="">Seleccione un servicio</option>
+          <option value="Mantención De Calefón">Detección de fuga de gas</option>
+          <option value="Instalación De Calefón">Reparación por fuga de gas</option>
+          <option value="Mantención De Termo">Cambio de flexible de gas</option>
+          <option value="Instalación De Termo">Ajuste de cocina o encimera</option>
+          <option value="Limpieza De Cañerías">Instalación de cocina o encimera</option>
+          <option value="Instalación Filtro Calefón">Certificación SEC</option>
+          <option value="Instalación Filtro Casa">Reparación de cañerías de gas</option>
+          <option value="otro">Instalación nueva red de gas</option>
+        </select>
+
+        <textarea name="mensaje" placeholder="Mensaje para el técnico (opcional)" rows="4"></textarea>
+
+        <button type="submit">Reservar visita</button>
+      </form>
 
       <div className="footer">
-        <a href="https://fugas-gas.cl" target="_blank" rel="noopener noreferrer">
-          Desarrollado por fugas-gas.cl™
-        </a>
+        Desarrollado por <a href="https://fugas-gas.cl">fugas-gas.cl™</a>
       </div>
     </div>
   );
 }
+
+export default App;
