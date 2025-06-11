@@ -1,24 +1,17 @@
 body {
   margin: 0;
-  padding: 0;
   font-family: Arial, sans-serif;
-  background-color: #f2f2f2;
+  background-color: #f5f5f5;
 }
 
 .app-container {
-  max-width: 400px;
-  margin: 40px auto;
+  max-width: 500px;
+  margin: 0 auto;
   padding: 20px;
+  border: 10px solid black; /* marco tipo celular */
   background-color: white;
-  border: 10px solid black; /* Marco tipo celular */
-  border-radius: 20px;
+  border-radius: 10px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 10px auto;
-  width: 200px;
 }
 
 h2 {
@@ -26,30 +19,26 @@ h2 {
   margin-bottom: 20px;
 }
 
-.formulario {
+form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
-input,
-select,
-textarea {
+input, select, textarea {
+  margin-bottom: 15px;
   padding: 10px;
-  font-size: 14px;
+  font-size: 16px;
   border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 100%;
-  box-sizing: border-box;
+  border-radius: 5px;
 }
 
 button {
-  background-color: #007bff;
-  color: white;
   padding: 12px;
   font-size: 16px;
+  background-color: #007bff;
+  color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
@@ -57,51 +46,28 @@ button:hover {
   background-color: #0056b3;
 }
 
-/* PIE DE PÁGINA */
-a div {
+.footer {
+  margin-top: 20px;
+  text-align: center;
   font-size: 14px;
+  color: #666;
 }
 
-/* CALENDARIO */
-.date-picker-container {
+/* 🗓️ Estilo para el calendario */
+.react-datepicker-wrapper {
+  width: 100%;
   display: flex;
   justify-content: center;
-  margin-bottom: 20px;
 }
 
 .react-datepicker {
-  font-size: 14px;
-  border: none;
-  box-shadow: none;
+  margin: 20px; /* margen completo */
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* borde suave */
 }
 
-.react-datepicker__month-container {
-  width: 100%;
-  max-width: 260px;
-  margin: 0 auto;
-}
-
-.react-datepicker__day--sun {
-  color: red;
-}
-
-.react-datepicker__day {
-  margin: 2px;
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-}
-
-.react-datepicker__day--selected,
-.react-datepicker__day--keyboard-selected {
-  background-color: #007bff;
-  color: white;
-  border-radius: 50%;
-}
-/* Domingos en rojo forzado */
-.domingo {
-  color: red !important;
+/* 🧾 Estilo para el campo mensaje */
+textarea[name="mensaje"] {
+  font-family: sans-serif;
+  resize: vertical;
 }
