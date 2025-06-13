@@ -65,6 +65,10 @@ button:hover {
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* borde suave */
 }
+.react-datepicker__day.domingo {
+  color: red !important;
+  font-weight: bold;
+}
 
 /* 🧾 Estilo para el campo mensaje */
 textarea[name="mensaje"] {
