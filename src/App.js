@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import emailjs from 'emailjs-com';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -222,8 +221,3 @@ export default function App() {
     </div>
   );
 }
-
-
-
-
-
