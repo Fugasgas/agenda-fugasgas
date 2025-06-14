@@ -75,3 +75,15 @@ textarea[name="mensaje"] {
   font-family: sans-serif;
   resize: vertical;
 }
+.formulario input,
+.formulario select,
+.formulario textarea {
+  width: 90%;
+  max-width: 400px;
+  padding: 10px;
+  margin: 10px auto;
+  display: block;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-family: sans-serif;
+}

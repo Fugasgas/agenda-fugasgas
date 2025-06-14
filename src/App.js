@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import emailjs from 'emailjs-com';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -12,7 +13,7 @@ export default function App() {
   const [fecha, setFecha] = useState(new Date());
   const [comuna, setComuna] = useState('');
   const [tramo, setTramo] = useState('');
-  const [tecnicoAsignado, setTecnicoAsignado] = useState('');
+  const [tecnicoAsignado, setTecnicoAsignado] = useState({ nombre: '', email: '' });
 
   const comunasPermitidas = [
     'providencia', 'ñuñoa', 'la reina', 'peñalolén', 'macul', 'santiago',
@@ -27,34 +28,41 @@ export default function App() {
   useEffect(() => {
     const comunaNormalizada = comuna.trim().toLowerCase();
     if (zonaOriente.includes(comunaNormalizada)) {
-      setTecnicoAsignado('Pablo Campusano');
+      setTecnicoAsignado({ nombre: 'Pablo Campusano', email: 'pablofugasgas@gmail.com' });
     } else if (zonaNorte.includes(comunaNormalizada)) {
-      setTecnicoAsignado('Alberto Campusano');
+      setTecnicoAsignado({ nombre: 'Alberto Campusano', email: 'betocampu@gmail.com' });
     } else if (zonaSur.includes(comunaNormalizada)) {
-      setTecnicoAsignado('Marcelo Campusano');
+      setTecnicoAsignado({ nombre: 'Marcelo Campusano', email: 'marcelocampusanouno@gmail.com' });
     } else {
-      setTecnicoAsignado('');
+      setTecnicoAsignado({ nombre: '', email: '' });
     }
   }, [comuna]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const formData = new FormData(form.current);
+    const nombre = formData.get("user_name");
+    const direccion = formData.get("direccion");
+    const complemento = formData.get("detalle_direccion");
+    const email = formData.get("user_email");
+    const telefono = formData.get("telefono");
+    const servicio = formData.get("servicio");
+    const mensaje = formData.get("mensaje");
+    const estacionamiento = formData.get("estacionamiento_visitas");
+
     const comunaNormalizada = comuna.trim().toLowerCase();
+    const diaSeleccionado = fecha.getDay();
 
-    const diaSeleccionado = fecha.getDay(); // 0 = domingo, 6 = sábado
+    if (diaSeleccionado === 0) {
+      alert("Los domingos no se realizan visitas. Por favor seleccione otra fecha.");
+      return;
+    }
 
-// DOMINGO → No se trabaja
-if (diaSeleccionado === 0) {
-  alert("Los domingos no se realizan visitas. Por favor seleccione otra fecha.");
-  return;
-}
-
-// SÁBADO → Solo se trabaja en la mañana
-if (diaSeleccionado === 6 && tramo === "14:00 a 18:00") {
-  alert("Los sábados solo se trabaja en el tramo de la mañana (9:00 a 13:00).");
-  return;
-}
+    if (diaSeleccionado === 6 && tramo === "14:00 a 18:00") {
+      alert("Los sábados solo se trabaja en el tramo de la mañana (9:00 a 13:00).");
+      return;
+    }
 
     if (!comunasPermitidas.includes(comunaNormalizada)) {
       if (window.confirm("Comuna no autorizada. ¿Desea contactarnos por WhatsApp?")) {
@@ -88,27 +96,54 @@ if (diaSeleccionado === 6 && tramo === "14:00 a 18:00") {
       return;
     }
 
-    emailjs.sendForm(
+    const templateParamsBase = {
+      user_name: nombre,
+      direccion,
+      detalle_direccion: complemento,
+      user_email: email,
+      telefono,
+      servicio,
+      mensaje,
+      comuna,
+      tramo_horario: tramo,
+      fecha: fecha.toLocaleDateString('es-CL'),
+      tecnico_asignado: tecnicoAsignado.nombre,
+      estacionamiento_visitas: estacionamiento
+    };
+
+    // Envíos encadenados: Cliente → Técnico → Administrador
+    emailjs.send(
       'service_puqsoem',
       'template_7fhj27n',
-      form.current,
+      { ...templateParamsBase, to_email: email },
       'ckSlrT8yMxEwuREmO'
-    ).then(
-      () => {
-        alert("Reserva enviada con éxito.");
-        setTimeout(() => {
-          form.current.reset();
-          setFecha(new Date());
-          setComuna('');
-          setTramo('');
-          setTecnicoAsignado('');
-        }, 500);
-      },
-      (error) => {
-        console.error('Error completo:', error);
-        alert("Error técnico: " + error.text);
-      }
-    );
+    ).then(() => {
+      return emailjs.send(
+        'service_puqsoem',
+        'template_7fhj27n',
+        { ...templateParamsBase, to_email: tecnicoAsignado.email },
+        'ckSlrT8yMxEwuREmO'
+      );
+    }).then(() => {
+      return emailjs.send(
+        'service_puqsoem',
+        'template_7fhj27n',
+        { ...templateParamsBase, to_email: 'fugasgas.cl@gmail.com' },
+        'ckSlrT8yMxEwuREmO'
+      );
+    }).then(() => {
+      alert("Reserva enviada con éxito.");
+      setTimeout(() => {
+        form.current.reset();
+        setFecha(new Date());
+        setComuna('');
+        setTramo('');
+        setTecnicoAsignado({ nombre: '', email: '' });
+      }, 500);
+    }).catch((error) => {
+      console.error('Error completo:', error);
+      alert("Error técnico: " + error.text);
+    });
   };
 
   return (
@@ -126,7 +161,7 @@ if (diaSeleccionado === 6 && tramo === "14:00 a 18:00") {
           minDate={new Date()}
           dayClassName={(date) => {
             const today = new Date();
-            if (date.getDay() === 0) return "domingo";// domingo = 0
+            if (date.getDay() === 0) return "domingo";
             if (date < today.setHours(0, 0, 0, 0)) return "deshabilitado";
             return undefined;
           }}
@@ -137,7 +172,6 @@ if (diaSeleccionado === 6 && tramo === "14:00 a 18:00") {
         <input type="text" name="user_name" placeholder="Nombre completo" required />
         <input type="text" name="direccion" placeholder="Dirección" required />
         <input type="text" name="detalle_direccion" placeholder="Casa / Dpto / Letra" required />
-        <input type="hidden" name="to_email" value="fugasgas.cl@gmail.com" />
         <input type="text" name="comuna" placeholder="Comuna" value={comuna}
           onChange={(e) => setComuna(e.target.value)}
           required
@@ -164,8 +198,15 @@ if (diaSeleccionado === 6 && tramo === "14:00 a 18:00") {
           <option value="14:00 a 18:00">14:00 a 18:00</option>
         </select>
 
+        {/* CAMPO NUEVO: Estacionamiento */}
+        <select name="estacionamiento_visitas" required>
+          <option value="">¿Hay estacionamiento de visitas?</option>
+          <option value="Sí">Sí</option>
+          <option value="No">No</option>
+        </select>
+
         <input type="hidden" name="fecha" value={fecha.toLocaleDateString('es-CL')} />
-        <input type="hidden" name="tecnico_asignado" value={tecnicoAsignado} />
+        <input type="hidden" name="tecnico_asignado" value={tecnicoAsignado.nombre} />
         <textarea name="mensaje" placeholder="Mensaje para el técnico" style={{ fontFamily: 'sans-serif' }}></textarea>
 
         <button type="submit">Reservar visita</button>
@@ -181,3 +222,8 @@ if (diaSeleccionado === 6 && tramo === "14:00 a 18:00") {
     </div>
   );
 }
+
+
+
+
+
