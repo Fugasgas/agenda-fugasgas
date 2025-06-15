@@ -13,6 +13,7 @@ export default function App() {
   const [comuna, setComuna] = useState('');
   const [tramo, setTramo] = useState('');
   const [tecnicoAsignado, setTecnicoAsignado] = useState({ nombre: '', email: '' });
+  const [mostrarMantencion, setMostrarMantencion] = useState(false); // NUEVO
 
   const comunasPermitidas = [
     'providencia', 'ñuñoa', 'la reina', 'peñalolén', 'macul', 'santiago',
@@ -39,7 +40,6 @@ export default function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const formData = new FormData(form.current);
     const nombre = formData.get("user_name");
     const direccion = formData.get("direccion");
@@ -110,45 +110,47 @@ export default function App() {
       estacionamiento_visitas: estacionamiento
     };
 
-    // Envíos encadenados: Cliente → Técnico → Administrador
-    emailjs.send(
-      'service_puqsoem',
-      'template_7fhj27n',
-      { ...templateParamsBase, to_email: email },
-      'ckSlrT8yMxEwuREmO'
-    ).then(() => {
-      return emailjs.send(
-        'service_puqsoem',
-        'template_7fhj27n',
-        { ...templateParamsBase, to_email: tecnicoAsignado.email },
-        'ckSlrT8yMxEwuREmO'
-      );
-    }).then(() => {
-      return emailjs.send(
-        'service_puqsoem',
-        'template_7fhj27n',
-        { ...templateParamsBase, to_email: 'fugasgas.cl@gmail.com' },
-        'ckSlrT8yMxEwuREmO'
-      );
-    }).then(() => {
-      alert("Reserva enviada con éxito.");
-      setTimeout(() => {
-        form.current.reset();
-        setFecha(new Date());
-        setComuna('');
-        setTramo('');
-        setTecnicoAsignado({ nombre: '', email: '' });
-      }, 500);
-    }).catch((error) => {
-      console.error('Error completo:', error);
-      alert("Error técnico: " + error.text);
-    });
+    emailjs.send('service_puqsoem', 'template_7fhj27n', { ...templateParamsBase, to_email: email }, 'ckSlrT8yMxEwuREmO')
+      .then(() => emailjs.send('service_puqsoem', 'template_7fhj27n', { ...templateParamsBase, to_email: tecnicoAsignado.email }, 'ckSlrT8yMxEwuREmO'))
+      .then(() => emailjs.send('service_puqsoem', 'template_7fhj27n', { ...templateParamsBase, to_email: 'fugasgas.cl@gmail.com' }, 'ckSlrT8yMxEwuREmO'))
+      .then(() => {
+        alert("Reserva enviada con éxito.");
+        setTimeout(() => {
+          form.current.reset();
+          setFecha(new Date());
+          setComuna('');
+          setTramo('');
+          setTecnicoAsignado({ nombre: '', email: '' });
+        }, 500);
+      })
+      .catch((error) => {
+        console.error('Error completo:', error);
+        alert("Error técnico: " + error.text);
+      });
+  };
+
+  const registrarMantencion = (mantencion) => {
+    fetch('https://script.google.com/macros/s/AKfycbwQa8bxHHmzhnmneE6kbsQsiTnyFBtMaKGLnKkZZZYbXw1DEcLkbRP7GTfsF55LW5lV/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(mantencion)
+    })
+      .then(res => res.text())
+      .then(msg => {
+        console.log("✔️ Mantención enviada:", msg);
+        alert("Mantención registrada correctamente");
+      })
+      .catch(err => {
+        console.error("❌ Error:", err);
+        alert("Error al registrar la mantención");
+      });
   };
 
   return (
     <div className="app-container">
       <img src="logo.png" alt="Logo Fugas-Gas" style={{ width: '200px', margin: '20px auto', display: 'block' }} />
       <h2 style={{ textAlign: 'center' }}>Agenda tu visita</h2>
+
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
         <DatePicker
           selected={fecha}
@@ -171,13 +173,9 @@ export default function App() {
         <input type="text" name="user_name" placeholder="Nombre completo" required />
         <input type="text" name="direccion" placeholder="Dirección" required />
         <input type="text" name="detalle_direccion" placeholder="Casa / Dpto / Letra" required />
-        <input type="text" name="comuna" placeholder="Comuna" value={comuna}
-          onChange={(e) => setComuna(e.target.value)}
-          required
-        />
+        <input type="text" name="comuna" placeholder="Comuna" value={comuna} onChange={(e) => setComuna(e.target.value)} required />
         <input type="email" name="user_email" placeholder="Correo electrónico" required />
         <input type="tel" name="telefono" placeholder="Teléfono" required />
-
         <select name="servicio" required>
           <option value="">Seleccione un servicio</option>
           <option value="Mantención De Calefón">Mantención De Calefón</option>
@@ -190,24 +188,19 @@ export default function App() {
           <option value="Reparación fuga De Gas">Reparación fuga De Gas</option>
           <option value="otro">Otro</option>
         </select>
-
         <select name="tramo_horario" value={tramo} onChange={(e) => setTramo(e.target.value)} required>
           <option value="">Seleccione un tramo horario</option>
           <option value="9:00 a 13:00">9:00 a 13:00</option>
           <option value="14:00 a 18:00">14:00 a 18:00</option>
         </select>
-
-        {/* CAMPO NUEVO: Estacionamiento */}
         <select name="estacionamiento_visitas" required>
           <option value="">¿Hay estacionamiento de visitas?</option>
           <option value="Sí">Sí</option>
           <option value="No">No</option>
         </select>
-
         <input type="hidden" name="fecha" value={fecha.toLocaleDateString('es-CL')} />
         <input type="hidden" name="tecnico_asignado" value={tecnicoAsignado.nombre} />
         <textarea name="mensaje" placeholder="Mensaje para el técnico" style={{ fontFamily: 'sans-serif' }}></textarea>
-
         <button type="submit">Reservar visita</button>
       </form>
 
@@ -218,6 +211,56 @@ export default function App() {
           </div>
         </a>
       </div>
+
+      {/* BOTÓN DE DESBLOQUEO */}
+      <div style={{ textAlign: 'center', marginTop: '40px' }}>
+        <button
+          style={{
+            backgroundColor: '#333',
+            color: 'white',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            border: 'none'
+          }}
+          onClick={() => {
+            const pass = prompt("🔒 Ingrese la contraseña para uso interno:");
+            if (pass === '0980') {
+              setMostrarMantencion(true);
+            } else {
+              alert("Contraseña incorrecta.");
+            }
+          }}
+        >
+          🔧 Uso interno - Registrar mantención
+        </button>
+      </div>
+
+      {/* FORMULARIO DE MANTENCIONES */}
+      {mostrarMantencion && (
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          const mantencion = {
+            fecha_mantencion: e.target.fecha_mantencion.value,
+            nombre_tecnico: e.target.nombre_tecnico.value,
+            cliente: e.target.cliente.value,
+            direccion: e.target.direccion.value,
+            comuna: e.target.comuna.value,
+            descripcion: e.target.descripcion.value
+          };
+          registrarMantencion(mantencion);
+          e.target.reset();
+        }} className="formulario" style={{ marginTop: '20px' }}>
+          <h3 style={{ textAlign: 'center' }}>Formulario de mantención</h3>
+          <input name="fecha_mantencion" type="date" required />
+          <input name="nombre_tecnico" placeholder="Nombre del técnico" required />
+          <input name="cliente" placeholder="Nombre del cliente" required />
+          <input name="direccion" placeholder="Dirección" required />
+          <input name="comuna" placeholder="Comuna" required />
+          <textarea name="descripcion" placeholder="Descripción de la mantención" required />
+          <button type="submit">Guardar Mantención</button>
+        </form>
+      )}
     </div>
   );
 }
