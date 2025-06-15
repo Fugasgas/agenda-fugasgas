@@ -7,14 +7,21 @@ import './App.css';
 
 registerLocale('es', es);
 
+// COMPONENTE PRINCIPAL
 export default function App() {
   const form = useRef();
   const [fecha, setFecha] = useState(new Date());
   const [comuna, setComuna] = useState('');
   const [tramo, setTramo] = useState('');
   const [tecnicoAsignado, setTecnicoAsignado] = useState({ nombre: '', email: '' });
-  const [mostrarMantencion, setMostrarMantencion] = useState(false); // NUEVO
+  const [mostrarMantencion, setMostrarMantencion] = useState(false);
 
+  // ESTADO FORMULARIO TÉCNICO
+  const [clienteMantencion, setClienteMantencion] = useState('');
+  const [fechaMantencion, setFechaMantencion] = useState(new Date());
+  const [comentarioMantencion, setComentarioMantencion] = useState('');
+
+  // COMUNAS Y ZONAS
   const comunasPermitidas = [
     'providencia', 'ñuñoa', 'la reina', 'peñalolén', 'macul', 'santiago',
     'las condes', 'vitacura', 'lo barnechea', 'maipú', 'la florida',
@@ -25,6 +32,7 @@ export default function App() {
   const zonaNorte = ['recoleta', 'independencia', 'santiago'];
   const zonaSur = ['maipú', 'la florida', 'san miguel', 'macul', 'peñalolén'];
 
+  // ASIGNACIÓN DE TÉCNICO
   useEffect(() => {
     const comunaNormalizada = comuna.trim().toLowerCase();
     if (zonaOriente.includes(comunaNormalizada)) {
@@ -38,6 +46,7 @@ export default function App() {
     }
   }, [comuna]);
 
+  // ENVÍO RESERVA CLIENTE
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(form.current);
@@ -129,20 +138,31 @@ export default function App() {
       });
   };
 
-  const registrarMantencion = (mantencion) => {
+  // ENVÍO MANTENCIÓN TÉCNICA
+  const handleMantencionSubmit = (e) => {
+    e.preventDefault();
+
+    const data = {
+      cliente: clienteMantencion,
+      fecha: fechaMantencion.toLocaleDateString('es-CL'),
+      comentario: comentarioMantencion
+    };
+
     fetch('https://script.google.com/macros/s/AKfycbwQa8bxHHmzhnmneE6kbsQsiTnyFBtMaKGLnKkZZZYbXw1DEcLkbRP7GTfsF55LW5lV/exec', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(mantencion)
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+      }
     })
-      .then(res => res.text())
-      .then(msg => {
-        console.log("✔️ Mantención enviada:", msg);
-        alert("Mantención registrada correctamente");
+      .then(() => {
+        alert('Mantención registrada');
+        setClienteMantencion('');
+        setComentarioMantencion('');
+        setFechaMantencion(new Date());
       })
-      .catch(err => {
-        console.error("❌ Error:", err);
-        alert("Error al registrar la mantención");
+      .catch((error) => {
+        alert('Error al registrar mantención: ' + error.message);
       });
   };
 
@@ -151,6 +171,7 @@ export default function App() {
       <img src="logo.png" alt="Logo Fugas-Gas" style={{ width: '200px', margin: '20px auto', display: 'block' }} />
       <h2 style={{ textAlign: 'center' }}>Agenda tu visita</h2>
 
+      {/* CALENDARIO */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
         <DatePicker
           selected={fecha}
@@ -160,15 +181,10 @@ export default function App() {
           inline
           calendarStartDay={1}
           minDate={new Date()}
-          dayClassName={(date) => {
-            const today = new Date();
-            if (date.getDay() === 0) return "domingo";
-            if (date < today.setHours(0, 0, 0, 0)) return "deshabilitado";
-            return undefined;
-          }}
         />
       </div>
 
+      {/* FORMULARIO DE CLIENTES */}
       <form ref={form} onSubmit={handleSubmit} className="formulario">
         <input type="text" name="user_name" placeholder="Nombre completo" required />
         <input type="text" name="direccion" placeholder="Dirección" required />
@@ -204,6 +220,7 @@ export default function App() {
         <button type="submit">Reservar visita</button>
       </form>
 
+      {/* PIE DE PÁGINA */}
       <div style={{ textAlign: 'center', marginTop: '20px' }}>
         <a href="https://fugas-gas.cl" target="_blank" rel="noopener noreferrer">
           <div style={{ color: 'white', backgroundColor: '#007bff', padding: '10px', borderRadius: '10px', display: 'inline-block' }}>
@@ -212,7 +229,7 @@ export default function App() {
         </a>
       </div>
 
-      {/* BOTÓN DE DESBLOQUEO */}
+      {/* BOTÓN INTERNO TÉCNICOS */}
       <div style={{ textAlign: 'center', marginTop: '40px' }}>
         <button
           style={{
@@ -224,7 +241,7 @@ export default function App() {
             border: 'none'
           }}
           onClick={() => {
-            const pass = prompt("🔒 Ingrese la contraseña para uso interno:");
+            const pass = prompt("🔐 Ingrese la contraseña para uso interno:");
             if (pass === '0980') {
               setMostrarMantencion(true);
             } else {
@@ -232,33 +249,34 @@ export default function App() {
             }
           }}
         >
-          🔧 Uso interno - Registrar mantención
+          🔐 Uso interno técnicos
         </button>
       </div>
 
-      {/* FORMULARIO DE MANTENCIONES */}
+      {/* FORMULARIO MANTENCIONES TÉCNICOS */}
       {mostrarMantencion && (
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const mantencion = {
-            fecha_mantencion: e.target.fecha_mantencion.value,
-            nombre_tecnico: e.target.nombre_tecnico.value,
-            cliente: e.target.cliente.value,
-            direccion: e.target.direccion.value,
-            comuna: e.target.comuna.value,
-            descripcion: e.target.descripcion.value
-          };
-          registrarMantencion(mantencion);
-          e.target.reset();
-        }} className="formulario" style={{ marginTop: '20px' }}>
-          <h3 style={{ textAlign: 'center' }}>Formulario de mantención</h3>
-          <input name="fecha_mantencion" type="date" required />
-          <input name="nombre_tecnico" placeholder="Nombre del técnico" required />
-          <input name="cliente" placeholder="Nombre del cliente" required />
-          <input name="direccion" placeholder="Dirección" required />
-          <input name="comuna" placeholder="Comuna" required />
-          <textarea name="descripcion" placeholder="Descripción de la mantención" required />
-          <button type="submit">Guardar Mantención</button>
+        <form onSubmit={handleMantencionSubmit} className="formulario" style={{ marginTop: '20px' }}>
+          <h3 style={{ textAlign: 'center' }}>Registrar próxima mantención</h3>
+          <input
+            type="text"
+            placeholder="Nombre del cliente"
+            value={clienteMantencion}
+            onChange={(e) => setClienteMantencion(e.target.value)}
+            required
+          />
+          <input
+            type="date"
+            value={fechaMantencion.toISOString().split('T')[0]}
+            onChange={(e) => setFechaMantencion(new Date(e.target.value))}
+            required
+          />
+          <textarea
+            placeholder="Comentario"
+            value={comentarioMantencion}
+            onChange={(e) => setComentarioMantencion(e.target.value)}
+            required
+          />
+          <button type="submit">Guardar mantención</button>
         </form>
       )}
     </div>
