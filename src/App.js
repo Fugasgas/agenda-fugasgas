@@ -7,7 +7,6 @@ import './App.css';
 
 registerLocale('es', es);
 
-// COMPONENTE PRINCIPAL
 export default function App() {
   const form = useRef();
   const [fecha, setFecha] = useState(new Date());
@@ -15,13 +14,12 @@ export default function App() {
   const [tramo, setTramo] = useState('');
   const [tecnicoAsignado, setTecnicoAsignado] = useState({ nombre: '', email: '' });
   const [mostrarMantencion, setMostrarMantencion] = useState(false);
-
-  // ESTADO FORMULARIO TÉCNICO
   const [clienteMantencion, setClienteMantencion] = useState('');
   const [fechaMantencion, setFechaMantencion] = useState(new Date());
   const [comentarioMantencion, setComentarioMantencion] = useState('');
+  const [previewReserva, setPreviewReserva] = useState(null);
+  const [urlFotoReserva, setUrlFotoReserva] = useState('');
 
-  // COMUNAS Y ZONAS
   const comunasPermitidas = [
     'providencia', 'ñuñoa', 'la reina', 'peñalolén', 'macul', 'santiago',
     'las condes', 'vitacura', 'lo barnechea', 'maipú', 'la florida',
@@ -32,7 +30,6 @@ export default function App() {
   const zonaNorte = ['recoleta', 'independencia', 'santiago'];
   const zonaSur = ['maipú', 'la florida', 'san miguel', 'macul', 'peñalolén'];
 
-  // ASIGNACIÓN DE TÉCNICO
   useEffect(() => {
     const comunaNormalizada = comuna.trim().toLowerCase();
     if (zonaOriente.includes(comunaNormalizada)) {
@@ -46,9 +43,40 @@ export default function App() {
     }
   }, [comuna]);
 
-  // ENVÍO RESERVA CLIENTE
+  const handleReservaFotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPreviewReserva(URL.createObjectURL(file));
+      subirFotoBackend(file);
+    } else {
+      setPreviewReserva(null);
+      setUrlFotoReserva('');
+    }
+  };
+
+  const subirFotoBackend = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append("foto", file);
+
+      const res = await fetch("/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      console.log("✅ Foto subida:", data.url);
+      alert("✅ Foto subida correctamente:\n" + data.url);
+      setUrlFotoReserva(data.url);
+    } catch (error) {
+      console.error("Error subiendo la foto:", error);
+      alert("❌ Ocurrió un error al subir la foto.");
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
     const formData = new FormData(form.current);
     const nombre = formData.get("user_name");
     const direccion = formData.get("direccion");
@@ -58,7 +86,6 @@ export default function App() {
     const servicio = formData.get("servicio");
     const mensaje = formData.get("mensaje");
     const estacionamiento = formData.get("estacionamiento_visitas");
-
     const comunaNormalizada = comuna.trim().toLowerCase();
     const diaSeleccionado = fecha.getDay();
 
@@ -104,7 +131,7 @@ export default function App() {
       return;
     }
 
-    const templateParamsBase = {
+    const templateParams = {
       user_name: nombre,
       direccion,
       detalle_direccion: complemento,
@@ -116,12 +143,14 @@ export default function App() {
       tramo_horario: tramo,
       fecha: fecha.toLocaleDateString('es-CL'),
       tecnico_asignado: tecnicoAsignado.nombre,
-      estacionamiento_visitas: estacionamiento
+      estacionamiento_visitas: estacionamiento,
+      url_foto_reserva: urlFotoReserva || ''
     };
 
-    emailjs.send('service_puqsoem', 'template_7fhj27n', { ...templateParamsBase, to_email: email }, 'ckSlrT8yMxEwuREmO')
-      .then(() => emailjs.send('service_puqsoem', 'template_7fhj27n', { ...templateParamsBase, to_email: tecnicoAsignado.email }, 'ckSlrT8yMxEwuREmO'))
-      .then(() => emailjs.send('service_puqsoem', 'template_7fhj27n', { ...templateParamsBase, to_email: 'fugasgas.cl@gmail.com' }, 'ckSlrT8yMxEwuREmO'))
+    // ✅ ENVÍO A EMAILJS (OBJETO, NO sendForm)
+    emailjs.send('service_puqsoem', 'template_7fhj27n', { ...templateParams, to_email: email }, 'ckSlrT8yMxEwuREmO')
+      .then(() => emailjs.send('service_puqsoem', 'template_7fhj27n', { ...templateParams, to_email: tecnicoAsignado.email }, 'ckSlrT8yMxEwuREmO'))
+      .then(() => emailjs.send('service_puqsoem', 'template_7fhj27n', { ...templateParams, to_email: 'fugasgas.cl@gmail.com' }, 'ckSlrT8yMxEwuREmO'))
       .then(() => {
         alert("Reserva enviada con éxito.");
         setTimeout(() => {
@@ -130,6 +159,8 @@ export default function App() {
           setComuna('');
           setTramo('');
           setTecnicoAsignado({ nombre: '', email: '' });
+          setPreviewReserva(null);
+          setUrlFotoReserva('');
         }, 500);
       })
       .catch((error) => {
@@ -138,7 +169,6 @@ export default function App() {
       });
   };
 
-  // ENVÍO MANTENCIÓN TÉCNICA
   const handleMantencionSubmit = (e) => {
     e.preventDefault();
 
@@ -148,22 +178,23 @@ export default function App() {
       comentario: comentarioMantencion
     };
 
-    fetch('https://script.google.com/macros/s/AKfycbwQa8bxHHmzhnmneE6kbsQsiTnyFBtMaKGLnKkZZZYbXw1DEcLkbRP7GTfsF55LW5lV/exec', {
+    fetch('https://script.google.com/macros/s/AKfycbymPfZwburGPgraXedlm7uCZ6m9bjlNI-qiCqH7HxHI21nIMXhP9CmhWYCatrMULS-q/exec', {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify(data),
       headers: {
         'Content-Type': 'application/json',
       }
     })
-      .then(() => {
-        alert('Mantención registrada');
-        setClienteMantencion('');
-        setComentarioMantencion('');
-        setFechaMantencion(new Date());
-      })
-      .catch((error) => {
-        alert('Error al registrar mantención: ' + error.message);
-      });
+    .then(() => {
+      alert('Mantención registrada');
+      setClienteMantencion('');
+      setComentarioMantencion('');
+      setFechaMantencion(new Date());
+    })
+    .catch((error) => {
+      alert('Error al registrar mantención: ' + error.message);
+    });
   };
 
   return (
@@ -171,7 +202,6 @@ export default function App() {
       <img src="logo.png" alt="Logo Fugas-Gas" style={{ width: '200px', margin: '20px auto', display: 'block' }} />
       <h2 style={{ textAlign: 'center' }}>Agenda tu visita</h2>
 
-      {/* CALENDARIO */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
         <DatePicker
           selected={fecha}
@@ -184,7 +214,6 @@ export default function App() {
         />
       </div>
 
-      {/* FORMULARIO DE CLIENTES */}
       <form ref={form} onSubmit={handleSubmit} className="formulario">
         <input type="text" name="user_name" placeholder="Nombre completo" required />
         <input type="text" name="direccion" placeholder="Dirección" required />
@@ -214,13 +243,50 @@ export default function App() {
           <option value="Sí">Sí</option>
           <option value="No">No</option>
         </select>
+
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "20px" }}>
+          <label style={{ fontWeight: "bold", fontSize: "16px", textAlign: "center", marginBottom: "10px" }}>
+            Por favor, agregue foto, si fuese posible.
+          </label>
+          <button
+            type="button"
+            onClick={() => document.getElementById("foto_reserva").click()}
+            style={{
+              backgroundColor: previewReserva ? "#28a745" : "#50bfff",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              padding: "12px 20px",
+              fontSize: "18px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "10px",
+              transition: "background-color 0.3s ease",
+            }}
+          >
+            <span role="img" aria-label="camera" style={{ fontSize: "40px", lineHeight: "1", transform: "translateY(-9px)" }}>📷</span>
+            <span>{previewReserva ? "Foto cargada" : "Tomar Foto"}</span>
+          </button>
+          <input
+            id="foto_reserva"
+            type="file"
+            style={{ display: "none" }}
+            onChange={handleReservaFotoChange}
+          />
+          {previewReserva && (
+            <img src={previewReserva} alt="Foto seleccionada" style={{ width: "250px", marginTop: "10px", borderRadius: "8px", boxShadow: "0 0 10px rgba(0,0,0,0.3)" }} />
+          )}
+        </div>
+
         <input type="hidden" name="fecha" value={fecha.toLocaleDateString('es-CL')} />
         <input type="hidden" name="tecnico_asignado" value={tecnicoAsignado.nombre} />
+        <input type="hidden" name="url_foto_reserva" value={urlFotoReserva || ''} />
         <textarea name="mensaje" placeholder="Mensaje para el técnico" style={{ fontFamily: 'sans-serif' }}></textarea>
         <button type="submit">Reservar visita</button>
       </form>
 
-      {/* PIE DE PÁGINA */}
       <div style={{ textAlign: 'center', marginTop: '20px' }}>
         <a href="https://fugas-gas.cl" target="_blank" rel="noopener noreferrer">
           <div style={{ color: 'white', backgroundColor: '#007bff', padding: '10px', borderRadius: '10px', display: 'inline-block' }}>
@@ -229,17 +295,9 @@ export default function App() {
         </a>
       </div>
 
-      {/* BOTÓN INTERNO TÉCNICOS */}
       <div style={{ textAlign: 'center', marginTop: '40px' }}>
         <button
-          style={{
-            backgroundColor: '#333',
-            color: 'white',
-            padding: '10px 20px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            border: 'none'
-          }}
+          style={{ backgroundColor: '#333', color: 'white', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', border: 'none' }}
           onClick={() => {
             const pass = prompt("🔐 Ingrese la contraseña para uso interno:");
             if (pass === '0980') {
@@ -253,29 +311,12 @@ export default function App() {
         </button>
       </div>
 
-      {/* FORMULARIO MANTENCIONES TÉCNICOS */}
       {mostrarMantencion && (
         <form onSubmit={handleMantencionSubmit} className="formulario" style={{ marginTop: '20px' }}>
           <h3 style={{ textAlign: 'center' }}>Registrar próxima mantención</h3>
-          <input
-            type="text"
-            placeholder="Nombre del cliente"
-            value={clienteMantencion}
-            onChange={(e) => setClienteMantencion(e.target.value)}
-            required
-          />
-          <input
-            type="date"
-            value={fechaMantencion.toISOString().split('T')[0]}
-            onChange={(e) => setFechaMantencion(new Date(e.target.value))}
-            required
-          />
-          <textarea
-            placeholder="Comentario"
-            value={comentarioMantencion}
-            onChange={(e) => setComentarioMantencion(e.target.value)}
-            required
-          />
+          <input type="text" placeholder="Nombre del cliente" value={clienteMantencion} onChange={(e) => setClienteMantencion(e.target.value)} required />
+          <input type="date" value={fechaMantencion.toISOString().split('T')[0]} onChange={(e) => setFechaMantencion(new Date(e.target.value))} required />
+          <textarea placeholder="Comentario" value={comentarioMantencion} onChange={(e) => setComentarioMantencion(e.target.value)} required />
           <button type="submit">Guardar mantención</button>
         </form>
       )}
